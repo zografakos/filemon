@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javolution.util.FastList;
 
 import com.l2jserver.Config;
 import com.l2jserver.L2DatabaseFactory;
@@ -55,7 +54,7 @@ public class MapRegionTable
 	private static Logger _log = Logger.getLogger(MapRegionTable.class.getName());
 	
 	private final int[][] _regions = new int[16][18];
-	private boolean[][] canTalk = new boolean[16][18];
+	public boolean[][] canTalk = new boolean[16][18];
 	
 	
 	public static enum TeleportWhereType
@@ -126,7 +125,7 @@ public class MapRegionTable
 			return 0;
 		}
 	}
-	public final boolean isSilenced(int posX, int posY)
+	public boolean isSilenced(int posX, int posY)
 	{
 		try 
 		{
@@ -145,7 +144,7 @@ public class MapRegionTable
 	public boolean silenceZone(int posX, int posY) {
 		if ( isSilenced(posX,posY)) return false;
 		canTalk[getMapRegionX(posX)][getMapRegionY(posY)] = false;
-		ThreadPoolManager.getInstance().scheduleGeneral(new unSilenceZone(posX,posY), Config.ZONE_SILENCE_TIME * 1000);
+		ThreadPoolManager.getInstance().scheduleGeneral(new unSilenceZone(posX,posY), Config.ZONE_SILENCE_TIME * 1000 * 60);
 		return true;
 		
 	}
@@ -154,15 +153,17 @@ public class MapRegionTable
 			canTalk[getMapRegionX(posX)][getMapRegionY(posY)] = true;
 		}
 	}
-	protected class unSilenceZone implements Runnable
+	public class unSilenceZone implements Runnable
 	{
+		int _posX, _posY;
 		private unSilenceZone(int posX,int posY) {
-			if ( isSilenced(posX,posY) ) {
-				canTalk[getMapRegionX(posX)][getMapRegionY(posY)] = true;
-			}
+			_posX = posX;
+			_posY = posY;
 		}
 		public void run() {
-			
+			if ( isSilenced(_posX,_posY) ) {
+				canTalk[getMapRegionX(_posX)][getMapRegionY(_posY)] = true;
+			}	
 		}
 	}
 	public final int getMapRegionX(int posX)
