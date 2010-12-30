@@ -267,6 +267,45 @@ public class GameStatusThread extends Thread
 					_print.println("IOPacketTP          - prints info about the I/O Packet ThreadPool");
 					_print.println("GeneralTP           - prints info about the General ThreadPool");
 				}
+				else if (_usrCommand.startsWith("bancha")) {
+					banCha(_usrCommand);
+				}
+				else if (_usrCommand.startsWith("ban_"))
+				 {
+				    StringTokenizer st = new StringTokenizer(_usrCommand);
+				    String comando = st.nextToken();
+				    StringTokenizer subc = new StringTokenizer(comando,"_");
+				    subc.nextToken(); 
+				    String subc1 = subc.nextToken(), channel = "";
+				    L2PcInstance targetPlayer = null;
+				    String player;
+				    Integer duration;
+				    String[] params = _usrCommand.split("\\s+");
+				    int durationR = 0;
+				    if ( params.length == 3 ) {
+					  	player = params[1];
+					    try
+					    {
+					       duration = Integer.parseInt(params[2]);
+					       durationR = duration;
+					       duration = duration * 60 * 60 * 1000;
+					             
+					    }
+					    catch(NumberFormatException nfe)
+					    {
+					        return;
+					    }
+					    L2PcInstance playerObj = L2World.getInstance().getPlayer(player);
+					    if (playerObj != null) targetPlayer = playerObj;
+					    if ( subc1.equalsIgnoreCase("all") ) channel = "AllChat";
+					      else channel = subc1;
+					    if ( targetPlayer != null ) {
+					      targetPlayer.startChatTask(channel,duration);
+					      targetPlayer.sendMessage("You have been chat banned on channel " + subc1 + " from website for " + durationR + " minutes");
+					     }
+					    else banChatOfflinePlayer(channel,player,duration,true);
+					}
+			    }
 				else if (_usrCommand.equals("status"))
 				{
 					_print.print(this.getServerStatus());
@@ -353,7 +392,7 @@ public class GameStatusThread extends Thread
 						String name = st.nextToken();
 						String message = val.substring(name.length()+1);
 						L2PcInstance reciever = L2World.getInstance().getPlayer(name);
-						CreatureSay cs = new CreatureSay(0, Say2.TELL, "Telnet Priv", message);
+						CreatureSay cs = new CreatureSay(0, Say2.TELL, "Staff ->", message);
 						if(reciever != null)
 						{
 							reciever.sendPacket(cs);
@@ -958,6 +997,98 @@ public class GameStatusThread extends Thread
 		{
 			e.printStackTrace();
 		}
+	}
+	private void banChatOfflinePlayer(String channel, String name, int delay, boolean ban)
+	{
+	        Connection con = null;
+	        int value = 0;
+	        int level =0;
+	        
+	        if(ban)
+	        {
+	                level = L2PcInstance.PunishLevel.CHAT.value();
+	                value = (delay > 0 ? delay * 60000 : 60000);
+	        }
+	        else
+	        {
+	                level = L2PcInstance.PunishLevel.NONE.value();
+	                value = 0;
+	        }
+	 
+	        try
+	        {
+	                con = L2DatabaseFactory.getInstance().getConnection();
+	
+	                PreparedStatement statement = con.prepareStatement("UPDATE character_chatban natural join characters SET " + channel + "=? WHERE char_name=?");
+	                statement.setLong(1, delay);
+	                statement.setString(2,name);
+	
+	                statement.execute();
+	                int count = statement.getUpdateCount();
+	                statement.close();
+	        
+	    }
+	    catch (SQLException se)
+	    {
+	        
+	            if (Config.DEBUG)
+	                    se.printStackTrace();
+	    }
+	    finally
+	    {
+	            try
+	            {
+	                    con.close();
+	            }
+	            catch (Exception e)
+	            {
+	                    if (Config.DEBUG)
+	                            e.printStackTrace();
+	            }
+	    }
+	}
+	public void banCha(String comando) {
+		   String[] args = comando.split("\\s+");
+		   if ( args.length < 3) return;
+		   String name = args[1];
+		   Long duration = Long.parseLong(args[2]);
+		   duration = duration * 60 * 1000;
+		   duration = duration + Calendar.getInstance().getTimeInMillis();
+		   L2PcInstance playerObj = L2World.getInstance().getPlayer(name);
+		   if (playerObj != null) {
+			   playerObj.setCharBanTime(duration);
+			   playerObj.setAccessLevel(-1);
+			   playerObj.logout();
+		   }
+		   else {
+			   Connection con = null;
+			  	try
+		       	{
+		       		con = L2DatabaseFactory.getInstance().getConnection();
+	
+		       		PreparedStatement statement = con.prepareStatement("UPDATE character_chatban natural join characters set Ban = ? where char_name=?");
+		       		statement.setLong(1, duration);
+		       		statement.setString(2,name);
+		       		statement.execute();
+		    		int count = statement.getUpdateCount();
+		    		statement.close();
+	
+		    		if (count == 0)
+		    			_print.println("Character not found!");
+		    		else
+		    			_print.println("Character "+name+" banned!");
+		       		
+		       	}
+		      	catch (SQLException se)
+		       	{
+		       		_print.println("SQLException while temp-banning player");
+		            if (Config.DEBUG) se.printStackTrace();
+		       	}
+		      	finally {
+		      		L2DatabaseFactory.close(con);
+			  	}
+			   
+		   }
 	}
 	
 	private boolean setEnchant(L2PcInstance activeChar, int ench, int armorType)

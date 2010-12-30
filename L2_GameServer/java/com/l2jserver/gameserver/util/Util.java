@@ -26,6 +26,7 @@ package com.l2jserver.gameserver.util;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.StringTokenizer;
 
 import com.l2jserver.gameserver.ThreadPoolManager;
 import com.l2jserver.gameserver.model.L2Object;
@@ -379,5 +380,15 @@ public final class Util
 			}
 		}
 		return false;
+	}
+	public static String clearTok(String cadena,String subcadena, String caracter) {
+		StringTokenizer st = new StringTokenizer(cadena);
+		String ct = "";
+		while (st.hasMoreTokens()) {
+			String nt = st.nextToken();
+			if ( nt != subcadena )
+				ct = ct.concat("," + nt);
+		}
+		return ct.substring(1);		
 	}
 }

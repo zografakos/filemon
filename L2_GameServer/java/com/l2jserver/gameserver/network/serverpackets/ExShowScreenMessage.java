@@ -20,6 +20,18 @@ package com.l2jserver.gameserver.network.serverpackets;
  */
 public class ExShowScreenMessage extends L2GameServerPacket
 {
+    public static final int POSITION_TOP_LEFT = 1;
+    public static final int POSITION_TOP_CENTER = 2;
+    public static final int POSITION_TOP_RIGHT = 3;
+    public static final int POSITION_CENTER_LEFT = 4;
+    public static final int POSITION_CENTER_CENTER = 5;
+    public static final int POSITION_CENTER_RIGHT = 6;
+    public static final int POSITION_BOTTOM_CENTER = 7;
+    public static final int POSITION_BOTTOM_RIGHT = 8;
+    public static final int POSITION_UNDER_BOTTOM_CENTER = 9;
+    public static final int FONT_SIZE_NORMAL = 0;
+    public static final int FONT_SIZE_SMALL = 1;
+
 	private int _type;
 	private int _sysMessageId;
 	private int _unk1;

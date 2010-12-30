@@ -82,6 +82,10 @@ public final class Config
 	public static final String GRANDBOSS_CONFIG_FILE = "./config/Grandboss.properties";
 	public static final String GRACIASEEDS_CONFIG_FILE = "./config/GraciaSeeds.properties";
 	public static final String CHAT_FILTER_FILE = "./config/chatfilter.txt";
+	public static final String TIPS_FILE = "./config/tips.txt";
+	
+	
+	public static final String VALHALLA_FILE = "./config/valhalla.properties";
 	
 	
 	//--------------------------------------------------
@@ -1023,7 +1027,25 @@ public final class Config
 	
 	//chatfilter
 	public static ArrayList<String>	FILTER_LIST;
-	
+	//tips
+	public static ArrayList<String> TIPS_LIST;
+	// Valhalla
+	public static int RATE_DROP_EPIC;
+	public static int RATE_DROP_EPICJEWELS;
+	public static int RATE_QUEST_S80;
+	public static int RATE_QUEST_REWARD_S80;
+	public static int RATE_ZONE_HIGHLEVEL;
+	public static int RATE_QUEST_S;
+	public static int RATE_QUEST_REWARD_S;
+	public static int RATE_DROP_EPAULETTE;
+	public static boolean FREE_POWERUPS;
+	public static boolean LOG_PARTY_FILE;
+	public static boolean LOG_CLAN_FILE;
+	public static boolean SHOW_TIPS;
+	public static boolean URGENT_TEST;
+	public static int ZONE_SILENCE_TIME;
+	public static boolean ENABLE_SILENCE;
+	public static boolean ENABLE_SILENCE_GM;
 	/**
 	 * This class initializes all global variables for configuration.<br>
 	 * If the key doesn't appear in properties file, a default value is set by this class.
@@ -2533,6 +2555,34 @@ public final class Config
 					e.printStackTrace();
 					throw new Error("Failed to Load "+PVP_CONFIG_FILE+" File.");
 				}
+				// Valhalla settings
+				try
+				{
+					L2Properties valhallaSettings	= new L2Properties();
+					is = new FileInputStream(new File(VALHALLA_FILE));
+					valhallaSettings.load(is);
+					RATE_DROP_EPIC = Integer.parseInt(valhallaSettings.getProperty("RateDropEpic","2"));
+					RATE_DROP_EPICJEWELS = Integer.parseInt(valhallaSettings.getProperty("RateDropEpicJewels","1"));
+					LOG_PARTY_FILE = Boolean.parseBoolean(valhallaSettings.getProperty("PartyFileLog","true"));
+					LOG_CLAN_FILE = Boolean.parseBoolean(valhallaSettings.getProperty("ClanFileLog","true"));
+					RATE_QUEST_S = Integer.parseInt(valhallaSettings.getProperty("RateQuestItemS","3"));
+					RATE_QUEST_REWARD_S = Integer.parseInt(valhallaSettings.getProperty("RateQuestRewardS","1"));
+					RATE_QUEST_S80 = Integer.parseInt(valhallaSettings.getProperty("RateQuestItemS80","1"));
+					RATE_QUEST_REWARD_S80 = Integer.parseInt(valhallaSettings.getProperty("RateQuestRewardS80","1"));
+					RATE_DROP_EPAULETTE = Integer.parseInt(valhallaSettings.getProperty("RateDropEpaulette","2"));
+					FREE_POWERUPS = Boolean.parseBoolean(valhallaSettings.getProperty("FreePowerUps","true"));
+					SHOW_TIPS = Boolean.parseBoolean(valhallaSettings.getProperty("ShowTips","true"));
+					URGENT_TEST = Boolean.parseBoolean(valhallaSettings.getProperty("UrgentTest","false"));
+					ZONE_SILENCE_TIME = Integer.parseInt(valhallaSettings.getProperty("ZoneSilenceTime","10"));
+					ENABLE_SILENCE = Boolean.parseBoolean(valhallaSettings.getProperty("EnableSilenceForPlayer","false"));
+					ENABLE_SILENCE_GM = Boolean.parseBoolean(valhallaSettings.getProperty("EnableSilenceForGM","true"));
+					
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+					throw new Error("Failed to Load "+VALHALLA_FILE+" File.");
+				}
 				// Load Olympiad L2Properties file (if exists)
 				try
 				{
@@ -2733,6 +2783,23 @@ public final class Config
 					e.printStackTrace();
 					throw new Error("Failed to Load " + CHAT_FILTER_FILE + " File.");
 				}
+				try {
+					TIPS_LIST = new ArrayList<String>();
+					LineNumberReader lr = new LineNumberReader(new BufferedReader(new FileReader(new File(TIPS_FILE))));
+					String linea = null;
+					while (( linea = lr.readLine()) != null)
+					{
+						if ( linea.trim().isEmpty() || linea.startsWith("#"))
+							continue;
+						TIPS_LIST.add(linea);
+					}
+					_log.info("Loaded " + TIPS_LIST.size() + " tips");
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+					throw new Error("Failed to Load " + TIPS_FILE + " File.");
+				}
 			}
 			finally
 			{
@@ -2832,6 +2899,7 @@ public final class Config
 					e.printStackTrace();
 					throw new Error("Failed to Load "+TELNET_FILE+" File.");
 				}
+				
 			}
 			finally
 			{

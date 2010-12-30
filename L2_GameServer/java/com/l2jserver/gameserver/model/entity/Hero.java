@@ -25,6 +25,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -872,8 +873,38 @@ public class Hero
 				}
 			}
 		}
+		resetPowerUps();
 	}
-	
+	public void resetPowerUps() {
+		Collection<L2PcInstance> allPlayers = L2World.getInstance().getAllPlayers().values();
+		L2PcInstance[] players = allPlayers.toArray(new L2PcInstance[allPlayers.size()]);
+		for ( L2PcInstance player : players) {
+			player.setTrader(false);
+			player.setGlobalGatekeeper(false);
+			player.setPowerBuffer(false);
+			player.setAegisBlessing(false);
+			player.setMammonHunter(false);
+			player.setNoExp(false);
+		}
+		Connection con = null;
+		try
+		{
+			con = L2DatabaseFactory.getInstance().getConnection();
+			PreparedStatement statement = con.prepareStatement(L2PcInstance.RESET_CHAR_POWERUP);
+			statement.execute();
+			statement.close();
+		}
+		catch (SQLException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		finally
+		{
+			 L2DatabaseFactory.close(con);
+		}
+		
+	}
 	public void updateHeroes(boolean setDefault)
 	{
 		//_herofights = new FastMap<Integer, List<StatsSet>>();

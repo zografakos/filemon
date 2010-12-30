@@ -14,13 +14,18 @@
  */
 package com.l2jserver.gameserver.model.entity;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import com.l2jserver.gameserver.model.actor.instance.L2PcInstance;
+import com.l2jserver.gameserver.util.MinionList;
 
 /**
  * @author Gnacik
  */
 public final class RecoBonus
 {
+	private static Logger _log = Logger.getLogger(RecoBonus.class.getName());
 	private static final int[][] _recoBonus = {
 		{ 25, 50, 50, 50, 50, 50, 50, 50, 50, 50 },
 		{ 16, 33, 50, 50, 50, 50, 50, 50, 50, 50 },
@@ -53,8 +58,9 @@ public final class RecoBonus
 		double _multiplier = 1;
 		
 		int bonus = getRecoBonus(activeChar);
+		double bon = (double) bonus / 100;
 		if(bonus > 0)
-			_multiplier = (1 + (bonus / 100));
+			_multiplier = _multiplier + bon;
 		
 		if(_multiplier < 1)
 			_multiplier = 1;

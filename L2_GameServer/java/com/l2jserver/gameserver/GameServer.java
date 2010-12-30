@@ -118,6 +118,7 @@ import com.l2jserver.gameserver.model.AutoChatHandler;
 import com.l2jserver.gameserver.model.AutoSpawnHandler;
 import com.l2jserver.gameserver.model.L2Manor;
 import com.l2jserver.gameserver.model.L2World;
+import com.l2jserver.gameserver.model.NevitBlessing;
 import com.l2jserver.gameserver.model.PartyMatchRoomList;
 import com.l2jserver.gameserver.model.PartyMatchWaitingList;
 import com.l2jserver.gameserver.model.entity.Hero;
@@ -315,7 +316,7 @@ public class GameServer
 		BoatManager.getInstance();
 		AirShipManager.getInstance();
 		GraciaSeedsManager.getInstance();
-		
+		NevitBlessing.getInstance();
 		try
 		{
 			_log.info("Loading Server Scripts");

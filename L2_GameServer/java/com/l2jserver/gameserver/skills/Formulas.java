@@ -3043,6 +3043,11 @@ public final class Formulas
 	{
 		if (!Config.ENABLE_FALLING_DAMAGE || fallHeight < 0)
 			return 0;
+		if ( cha instanceof L2PcInstance) {
+			if ( cha.isInsideZone(L2Character.ZONE_WATER) ) {
+				return 0;
+			}
+		}
 		final double damage = cha.calcStat(Stats.FALL, fallHeight * cha.getMaxHp() / 1000, null, null);
 		return damage;
 	}
