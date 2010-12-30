@@ -19,8 +19,11 @@ import static com.l2jserver.gameserver.ai.CtrlIntention.AI_INTENTION_ATTACK;
 import static com.l2jserver.gameserver.ai.CtrlIntention.AI_INTENTION_IDLE;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
+
+import javolution.util.FastList;
 
 import com.l2jserver.Config;
 import com.l2jserver.gameserver.GameTimeController;
@@ -65,7 +68,7 @@ public class L2AttackableAI extends L2CharacterAI implements Runnable
 	
 	private static final int RANDOM_WALK_RATE = 30; // confirmed
 	// private static final int MAX_DRIFT_RANGE = 300;
-	private static final int MAX_ATTACK_TIMEOUT = 1200; // int ticks, i.e. 2min
+	private static final int MAX_ATTACK_TIMEOUT = 300; // int ticks, i.e. 2min
 	
 	/** The L2Attackable AI task executed every 1s (call onEvtThink method)*/
 	private Future<?> _aiTask;
@@ -446,6 +449,7 @@ public class L2AttackableAI extends L2CharacterAI implements Runnable
 		// A L2Attackable isn't aggressive during 10s after its spawn because _globalAggro is set to -10
 		if (_globalAggro >= 0)
 		{
+			
 			// Get all visible objects inside its Aggro Range
 			Collection<L2Object> objs = npc.getKnownList().getKnownObjects().values();
 			//synchronized (npc.getKnownList().getKnownObjects())
@@ -522,7 +526,22 @@ public class L2AttackableAI extends L2CharacterAI implements Runnable
 					((L2MonsterInstance)npc).getMinionList().deleteReusedMinions();
 			}
 		}
+		// L2 Valhalla: El mob debe olvidar la agresión pasado cierto tiempo
+		// Reconsider target next round if _actor hasn't got hits in for last 14 seconds
 		
+/*		if (!npc.isMuted()
+		        && _attackTimeout - 160 < GameTimeController.getGameTicks()		        )
+		{
+			if (Util.checkIfInRange(900, npc, npc.getMostHated(), true))
+			{
+				// take off 2* the amount the aggro is larger than second most
+				((L2Attackable) _actor).reduceHate(npc.getMostHated(), 2 * (((L2Attackable) _actor).getHating(npc.getMostHated()) - ((L2Attackable) _actor).getHating(npc.getSecondHated())));
+				// Calculate a new attack timeout
+				_attackTimeout = MAX_ATTACK_TIMEOUT
+				        + GameTimeController.getGameTicks();
+			}
+		}
+		*/
 		// Check if the actor is a L2GuardInstance
 		if (npc instanceof L2GuardInstance)
 		{
@@ -661,7 +680,7 @@ public class L2AttackableAI extends L2CharacterAI implements Runnable
 		final L2Attackable npc = getActiveChar();
 		if (npc.isCastingNow())
 			return;
-		
+		_log.log(Level.WARNING,"Attack timeout:" +_attackTimeout + " gametimecontroller:" + GameTimeController.getGameTicks());
 		L2Character originalAttackTarget = getAttackTarget();
 		// Check if target is dead or if timeout is expired to stop this attack
 		if (originalAttackTarget == null || originalAttackTarget.isAlikeDead() || _attackTimeout < GameTimeController.getGameTicks())

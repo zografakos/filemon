@@ -15,6 +15,7 @@
 package com.l2jserver.gameserver.network.clientpackets;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Random;
 import java.util.logging.Logger;
 
 import com.l2jserver.Base64;
@@ -417,7 +418,8 @@ public class EnterWorld extends L2GameClientPacket
 			// no broadcast needed since the player will already spawn dead to others
 			sendPacket(new Die(activeChar));
 		}
-		
+		if ( Config.SHOW_TIPS)
+			sendTip(activeChar);
 		activeChar.onPlayerEnter();
 		
 		sendPacket(new SkillCoolTime(activeChar));
@@ -595,6 +597,16 @@ public class EnterWorld extends L2GameClientPacket
 				apprentice.sendPacket(msg);
 			}
 		}
+	}
+	/**
+	 * @param activeChar
+	 */
+	private void sendTip(L2PcInstance player) {
+		if (Config.TIPS_LIST.isEmpty()) return;
+		Random rand = new Random();
+		int x = rand.nextInt(Config.TIPS_LIST.size());
+		player.sendMessage(Config.TIPS_LIST.get(x));
+		return;
 	}
 	
 	/**

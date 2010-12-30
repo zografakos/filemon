@@ -199,7 +199,11 @@ public class ThreadPoolManager
 	{
 		return _generalScheduledThreadPool.remove(r);
 	}
-	
+	public boolean removeGeneral(Runnable r)
+	{
+	    return this._generalScheduledThreadPool.remove(r);
+	}
+
 	public ScheduledFuture<?> scheduleAi(Runnable r, long delay)
 	{
 		try

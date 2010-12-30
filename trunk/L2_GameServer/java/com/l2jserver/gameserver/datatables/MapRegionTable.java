@@ -21,9 +21,12 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javolution.util.FastList;
+
 import com.l2jserver.Config;
 import com.l2jserver.L2DatabaseFactory;
 import com.l2jserver.gameserver.SevenSigns;
+import com.l2jserver.gameserver.ThreadPoolManager;
 import com.l2jserver.gameserver.instancemanager.CastleManager;
 import com.l2jserver.gameserver.instancemanager.ClanHallManager;
 import com.l2jserver.gameserver.instancemanager.FortManager;
@@ -52,6 +55,8 @@ public class MapRegionTable
 	private static Logger _log = Logger.getLogger(MapRegionTable.class.getName());
 	
 	private final int[][] _regions = new int[16][18];
+	private boolean[][] canTalk = new boolean[16][18];
+	
 	
 	public static enum TeleportWhereType
 	{
@@ -86,6 +91,7 @@ public class MapRegionTable
 				for (int j = 0; j < 16; j++)
 				{
 					_regions[j][region] = rset.getInt(j + 2);
+					canTalk[j][region] = true;
 					count2++;
 					//_log.fine(j+","+region+" -> "+rset.getInt(j+2));
 				}
@@ -120,7 +126,45 @@ public class MapRegionTable
 			return 0;
 		}
 	}
+	public final boolean isSilenced(int posX, int posY)
+	{
+		try 
+		{
+			if ( canTalk[getMapRegionX(posX)][getMapRegionY(posY)] == false ) return true;
+			else return false;
+		}
+		catch (ArrayIndexOutOfBoundsException e)
+		{
+			if (Config.DEBUG) {
+				_log.log(Level.WARNING,"MapRegionTable: isSilenced() out of bonds at X,Y=" + posX + "," + posY, e);
+			}
+			return true;
+		}
+	}
 	
+	public boolean silenceZone(int posX, int posY) {
+		if ( isSilenced(posX,posY)) return false;
+		canTalk[getMapRegionX(posX)][getMapRegionY(posY)] = false;
+		ThreadPoolManager.getInstance().scheduleGeneral(new unSilenceZone(posX,posY), Config.ZONE_SILENCE_TIME * 1000);
+		return true;
+		
+	}
+	public void unSilenceNow(int posX,int posY) {
+		if ( isSilenced(posX,posY)) {
+			canTalk[getMapRegionX(posX)][getMapRegionY(posY)] = true;
+		}
+	}
+	protected class unSilenceZone implements Runnable
+	{
+		private unSilenceZone(int posX,int posY) {
+			if ( isSilenced(posX,posY) ) {
+				canTalk[getMapRegionX(posX)][getMapRegionY(posY)] = true;
+			}
+		}
+		public void run() {
+			
+		}
+	}
 	public final int getMapRegionX(int posX)
 	{
 		return (posX >> 15) + 9;// + centerTileX;

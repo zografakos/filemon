@@ -715,8 +715,8 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 							&& !player.isInJail()
 							&& player.getVehicle() == null)
 					{
-						if ((player.isInStoreMode() && Config.OFFLINE_TRADE_ENABLE)
-								|| (player.isInCraftMode() && Config.OFFLINE_CRAFT_ENABLE))
+						if ((player.isInStoreMode() && Config.OFFLINE_TRADE_ENABLE )
+								|| (player.isInCraftMode() && Config.OFFLINE_CRAFT_ENABLE ))
 						{
 							player.leaveParty();
 							if (Config.OFFLINE_SET_NAME_COLOR)

@@ -144,7 +144,16 @@ public class L2Party
 	{
 		return _members;
 	}
-	
+	/*
+	 * get all names on party by string
+	 */
+	public final String getPartyNames() {
+		String _names ="";
+		for ( L2PcInstance member: getPartyMembers()) {
+			_names = _names + member.getName() + ",";
+		}
+		return _names.substring(0,_names.length() - 1);
+	}
 	/**
 	 * get random member from party
 	 * @return

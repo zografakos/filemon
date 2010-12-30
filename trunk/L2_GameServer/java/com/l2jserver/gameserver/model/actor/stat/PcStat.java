@@ -14,6 +14,8 @@
  */
 package com.l2jserver.gameserver.model.actor.stat;
 
+import java.util.logging.Level;
+
 import com.l2jserver.Config;
 import com.l2jserver.gameserver.datatables.NpcTable;
 import com.l2jserver.gameserver.model.actor.L2Character;
@@ -108,7 +110,7 @@ public class PcStat extends PlayableStat
 		L2PcInstance activeChar = getActiveChar();
 		if (!activeChar.getAccessLevel().canGainExp())
 			return false;
-		
+		if ( !activeChar.gainsExp()) return false;
 		// if this player has a pet that takes from the owner's Exp, give the pet Exp now
 		
 		if (activeChar.getPet() instanceof L2PetInstance)
@@ -182,6 +184,7 @@ public class PcStat extends PlayableStat
 			// Apply recommendation bonus
 			addToExp *= RecoBonus.getRecoMultiplier(getActiveChar());
 			addToSp  *= RecoBonus.getRecoMultiplier(getActiveChar());
+			
 		}
 		return addExpAndSp(addToExp, addToSp);
 	}

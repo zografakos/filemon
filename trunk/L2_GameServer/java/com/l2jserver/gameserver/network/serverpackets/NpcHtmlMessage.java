@@ -205,7 +205,24 @@ public final class NpcHtmlMessage extends L2GameServerPacket
 		setHtml(content);
 		return true;
 	}
-	
+	public void append (String value) {
+		if ( value.isEmpty()) return;
+		if ( _html.isEmpty() ) setHtml(value);
+		else _html = _html + value;
+	}
+	public boolean appendFile(String prefix,String path) {
+        String content = HtmCache.getInstance().getHtm(prefix, path);
+
+		if (content == null)
+		{
+			setHtml("<html><body>My Text is missing:<br>"+path+"</body></html>");
+			_log.warning("missing html page "+path);
+			return false;
+		}
+
+        append(content);
+        return true;
+	}
 	public void replace(String pattern, String value)
 	{
 		_html = _html.replaceAll(pattern, value.replaceAll("\\$", "\\\\\\$"));

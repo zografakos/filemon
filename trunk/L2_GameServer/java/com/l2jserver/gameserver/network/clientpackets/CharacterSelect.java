@@ -15,6 +15,7 @@
 package com.l2jserver.gameserver.network.clientpackets;
 
 
+import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -104,6 +105,14 @@ public class CharacterSelect extends L2GameClientPacket
 					if (cha == null)
 						return; // handled in L2GameClient
 					
+					
+					if (cha.getCharBanTime() > 0 ) {
+						if ( Calendar.getInstance().getTimeInMillis() > cha.getCharBanTime() ){
+							cha.setCharBanTime(0);
+							cha.setAccessLevel(0);
+						}
+						else { cha.logout(); return; }
+					}
 					if (cha.getAccessLevel().getLevel() < 0)
 					{
 						cha.logout();

@@ -1017,7 +1017,7 @@ public class L2Attackable extends L2Npc
 			return;
 		}
 		AggroInfo ai = getAggroList().get(target);
-		
+		_log.log(Level.WARNING,"AI Hate:" + ai.getHate() + " getMostHated(): " + getMostHated() + " amount:" + amount);
 		if (ai == null)
 			return;
 		ai.addHate(-amount);
@@ -1073,6 +1073,28 @@ public class L2Attackable extends L2Npc
 			}
 		}
 		return mostHated;
+	}
+	/*
+	 * L2Valhalla:Return the second most hated L2 Character of L2Attackable _aggrolist
+	 */
+	public L2Character getSecondHated() {
+		if ( getAggroList().isEmpty() || isAlikeDead() ) return null;
+		L2Character secondHated = null;
+		int maxHate = getHating(getMostHated());
+		int secondHate = 0;
+		{
+			for ( AggroInfo ai: getAggroList().values())
+			{
+				if ( ai == null)
+					continue;
+				if ( ai.checkHate(this) > secondHate && ai.checkHate(this) < maxHate)
+				{
+					secondHated = ai.getAttacker();
+					secondHate = ai.getHate();
+				}				
+			}
+		}
+		return secondHated;
 	}
 	
 	/**
@@ -1175,6 +1197,38 @@ public class L2Attackable extends L2Npc
 	}
 	
 	/**
+	 * Devuelve si un itemId es joya de boss o no
+	 * @param itemId
+	 * @return
+	 */
+	private static boolean isBossJewel(int itemId)
+	{
+		switch (itemId)
+		{
+		case 6656: // Earring of Antharas
+		case 6657: // Necklace of Valakas
+		case 6658: // Ring of Baium
+		case 6659: // Zaken's Earring
+		case 6660: // Ring of Queen Ant
+		case 6661: // Earring of Orfen
+		case 6662: // Ring of Core
+		case 8191: // Frintezza's Necklace
+		case 10170: // Baylor's Earring
+		case 10314: // Beleth's Ring
+			return true;
+		default:
+			return false;
+		}
+	}
+	/**
+	 *  Devuelve si un itemId es un epaulette
+	 */
+	private static boolean isEpaulette(int itemId)
+	{
+		if ( itemId == 9912) return true;
+		else return false;
+	}
+	/**
 	 * Calculates quantity of items for specific drop acording to current situation
 	 *
 	 * @param drop The L2DropData count is being calculated for
@@ -1212,7 +1266,13 @@ public class L2Attackable extends L2Npc
 			dropChance = ((drop.getChance() - ((drop.getChance() * levelModifier)/100)) / deepBlueDrop);
 		
 		// Applies Drop rates
-		if (Config.RATE_DROP_ITEMS_ID.get(drop.getItemId()) != 0)
+		if ( isRaid() && isBossJewel(drop.getItemId()))
+			dropChance *= Config.RATE_DROP_EPICJEWELS;
+		else if ( isRaid() && this instanceof L2GrandBossInstance )
+			dropChance *= Config.RATE_DROP_EPIC;
+		else if ( isEpaulette(drop.getItemId())) 
+			dropChance *= Config.RATE_DROP_EPAULETTE;
+		else if (Config.RATE_DROP_ITEMS_ID.get(drop.getItemId()) != 0)
 			dropChance *= Config.RATE_DROP_ITEMS_ID.get(drop.getItemId());
 		else if (isSweep)
 			dropChance *= Config.RATE_DROP_SPOIL;

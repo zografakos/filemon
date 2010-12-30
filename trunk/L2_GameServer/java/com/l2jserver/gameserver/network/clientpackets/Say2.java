@@ -41,6 +41,8 @@ public final class Say2 extends L2GameClientPacket
 	private static final String _C__38_SAY2 = "[C] 38 Say2";
 	private static Logger _log = Logger.getLogger(Say2.class.getName());
 	private static Logger _logChat = Logger.getLogger("chat");
+	private static Logger _logParty = Logger.getLogger("party");
+	private static Logger _logClan = Logger.getLogger("clan");
 	
 	public final static int ALL = 0;
 	public final static int SHOUT = 1; //!
@@ -177,14 +179,26 @@ public final class Say2 extends L2GameClientPacket
 		if (Config.LOG_CHAT)
 		{
 			LogRecord record = new LogRecord(Level.INFO, _text);
-			record.setLoggerName("chat");
+			if ( _type == PARTY && Config.LOG_PARTY_FILE ) record.setLoggerName("party");
+			else if ( _type == CLAN && Config.LOG_CLAN_FILE ) record.setLoggerName("clan");
+			else record.setLoggerName("chat");
 			
-			if (_type == TELL)
+			if (_type == TELL) {
 				record.setParameters(new Object[]{CHAT_NAMES[_type], "[" + activeChar.getName() + " to "+_target+"]"});
-			else
+				_logChat.log(record);
+			}
+			else if ( _type == PARTY && Config.LOG_PARTY_FILE && activeChar.getParty() != null ) {
+				record.setParameters(new Object[]{CHAT_NAMES[_type], "[" + activeChar.getParty().getPartyNames() + "][" + activeChar.getName() + "]"});
+				_logParty.log(record);
+			}
+			else if ( _type == CLAN && Config.LOG_CLAN_FILE && activeChar.getClan() != null ) {
+				record.setParameters(new Object[]{CHAT_NAMES[_type],"[" + activeChar.getClan().getName() + ":" + activeChar.getName() + "]"});
+				_logClan.log(record);
+			}
+			else{
 				record.setParameters(new Object[]{CHAT_NAMES[_type], "[" + activeChar.getName() + "]"});
-			
-			_logChat.log(record);
+				_logChat.log(record);
+			}
 		}
 		
 		

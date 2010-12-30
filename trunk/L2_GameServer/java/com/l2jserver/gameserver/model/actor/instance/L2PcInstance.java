@@ -317,13 +317,58 @@ public final class L2PcInstance extends L2Playable
 	private static final String SELECT_CHAR_TRANSFORM = "SELECT transform_id FROM characters WHERE charId=?";
 	private static final String UPDATE_CHAR_TRANSFORM = "UPDATE characters SET transform_id=? WHERE charId=?";
 	
+	//L2Valhalla: POWERUPS sql
+	private static final String SELECT_CHAR_POWERUP = "SELECT trader,globalGatekeeper,powerBuffer,aegisBlessing,mammonHunter,noExp FROM player_powerups where charId=?";
+	private static final String INSERT_CHAR_POWERUP = "INSERT into player_powerups (charId,trader,globalGatekeeper,powerBuffer,aegisBlessing,mammonHunter,noExp) VALUES (?,0,0,0,0,0,0)";
+	private static final String INSERT_CHAR_POWERUP_FREE = "INSERT into player_powerups (charId,trader,globalGatekeeper,powerBuffer,aegisBlessing,mammonHunter,noExp) VALUES (?,1,1,1,1,1,1)";
+	private static final String REPLACE_CHAR_POWERUP = "REPLACE into player_powerups (charId,trader,globalGatekeeper,powerBuffer,aegisBlessing,mammonHunter,noExp) VALUES (?,?,?,?,?,?,?)";
+	public static final String RESET_CHAR_POWERUP = "UPDATE player_powerups set trader=0,globalGatekeeper=0,powerBuffer=0,aegisBlessing=0,mammonHunter=0,noExp=0";
+	//L2Valhalla: CHATBAN sql
+	private static final String SELECT_CHAT_BAN = "SELECT AllChat,Shout,Whisp,Trade,Party,Clan,Ally,Hero,Ban FROM character_chatban where charId=?";
+	private static final String INSERT_CHAT_BAN = "INSERT into character_chatban VALUES (?,0,0,0,0,0,0,0,0,0)";
+	
+	private static final String REPLACE_CHAT_BAN = "REPLACE into character_chatban VALUES (?,?,?,?,?,?,?,?,?,?)";
+	//L2Valhalla: player glory//punishment values. Inmediate update.
+	private static final String UPDATE_GLORY = "UPDATE players set glory_points=? where player=?";
+	private static final String UPDATE_PENALTY = "UPDATE players set penalty_points=? where player=?";
+	private static final String GET_GLORY = "SELECT glory_points from players where player=?";
+	private static final String GET_PENALTY = "SELECT penalty_points from players where player=? ";
+	private static final String GET_PLAYER = "SELECT player from player_accounts where account=?";
+	//	L2Valhalla: Channel-Independant banneable boolean values
+	
+	public boolean canAll = true;
+	public boolean canShout = true;
+	public boolean canWhisp = true;
+	public boolean canTrade = true;
+	public boolean canParty = true;
+	public boolean canClan = true;
+	public boolean canAlly = true;
+	public boolean canHero = true;
+	public long charBanTime = 0;
+	
+	public ScheduledFuture<?> _unbanChatAllTask;
+	public ScheduledFuture<?> _unbanChatShoutTask;
+	public ScheduledFuture<?> _unbanChatWhispTask;
+	public ScheduledFuture<?> _unbanChatTradeTask;
+	public ScheduledFuture<?> _unbanChatPartyTask;
+	public ScheduledFuture<?> _unbanChatClanTask;
+	public ScheduledFuture<?> _unbanChatAllyTask;
+	public ScheduledFuture<?> _unbanChatHeroTask;
+	
 	public static final int REQUEST_TIMEOUT = 15;
 	public static final int STORE_PRIVATE_NONE = 0;
 	public static final int STORE_PRIVATE_SELL = 1;
 	public static final int STORE_PRIVATE_BUY = 3;
 	public static final int STORE_PRIVATE_MANUFACTURE = 5;
 	public static final int STORE_PRIVATE_PACKAGE_SELL = 8;
-	
+	public boolean powerup_trader = false;
+	public boolean powerup_globalGatekeeper = false;
+	public boolean powerup_aegisBlessing = false;
+	public boolean powerup_powerBuffer = false;
+	public boolean powerup_mammonHunter = false;
+	public boolean powerup_noExp = false;
+	public boolean gainsExp = true;
+
 	/** The table containing all minimum level needed for each Expertise (None, D, C, B, A, S, S80, S84)*/
 	private static final int[] EXPERTISE_LEVELS =
 	{
@@ -4090,17 +4135,17 @@ public final class L2PcInstance extends L2Playable
 	public void setProtection(boolean protect)
 	{
 		if (Config.DEVELOPER && (protect || _protectEndTime > 0))
-			_log.warning(getName() + ": Protection " + (protect?"ON " + (GameTimeController.getGameTicks() + Config.PLAYER_SPAWN_PROTECTION * GameTimeController.TICKS_PER_SECOND) :"OFF") + " (currently " + GameTimeController.getGameTicks() + ")");
-		
-		_protectEndTime = protect ? GameTimeController.getGameTicks() + Config.PLAYER_SPAWN_PROTECTION * GameTimeController.TICKS_PER_SECOND : 0;
+            _log.warning(getName() + ": Protection " + (protect?"ON " + (GameTimeController.getGameTicks() + Config.PLAYER_SPAWN_PROTECTION * GameTimeController.TICKS_PER_SECOND) :"OFF") + " (currently " + GameTimeController.getGameTicks() + ")");
+		int _protectAegis = this.getAegisBlessing() ? 20 *  GameTimeController.TICKS_PER_SECOND : 0;
+		_protectEndTime = protect ? GameTimeController.getGameTicks() + Config.PLAYER_SPAWN_PROTECTION * GameTimeController.TICKS_PER_SECOND + _protectAegis: 0;
 	}
 	
 	public void setTeleportProtection(boolean protect)
 	{
 		if (Config.DEVELOPER && (protect || _teleportProtectEndTime > 0))
-			_log.warning(getName() + ": Tele Protection " + (protect?"ON " + (GameTimeController.getGameTicks() + Config.PLAYER_TELEPORT_PROTECTION * GameTimeController.TICKS_PER_SECOND) :"OFF") + " (currently " + GameTimeController.getGameTicks() + ")");
-		
-		_teleportProtectEndTime = protect? GameTimeController.getGameTicks() + Config.PLAYER_TELEPORT_PROTECTION * GameTimeController.TICKS_PER_SECOND : 0;
+                	_log.warning(getName() + ": Tele Protection " + (protect?"ON " + (GameTimeController.getGameTicks() + Config.PLAYER_TELEPORT_PROTECTION * GameTimeController.TICKS_PER_SECOND) :"OFF") + " (currently " + GameTimeController.getGameTicks() + ")");
+		int _protectAegis = this.getAegisBlessing() ? 20 *  GameTimeController.TICKS_PER_SECOND : 0;
+		_teleportProtectEndTime = protect? GameTimeController.getGameTicks() + Config.PLAYER_TELEPORT_PROTECTION * GameTimeController.TICKS_PER_SECOND + _protectAegis: 0;
 	}
 	
 	/**
@@ -7330,6 +7375,10 @@ public final class L2PcInstance extends L2Playable
 			
 			if (Config.STORE_UI_SETTINGS)
 				player.restoreUISettings();
+			//L2Valhalla
+			player.restorePowerUps();
+			player.restoreChatBans();
+			
 		}
 		catch (Exception e)
 		{
@@ -7342,7 +7391,495 @@ public final class L2PcInstance extends L2Playable
 		
 		return player;
 	}
+	/*
+	 * player powerups L2 Valhalla
+	 */
+	public void restorePowerUps() {
+		L2PcInstance player = null;
+		Connection con = null;
+		
+		try
+		{
+			con = L2DatabaseFactory.getInstance().getConnection();
+			int objectId = this.getObjectId();
+			PreparedStatement statement = con.prepareStatement(SELECT_CHAR_POWERUP);
+			statement.setInt(1, objectId);
+			ResultSet rset = statement.executeQuery(); int i = 0;
+			player = this;
+			while (rset.next())
+	            {
+					//Ojo, con FreePowerUps hay que añadir mas abajo 
+					i = 1;
+	                player.setTrader(rset.getBoolean("trader"));
+	                player.setGlobalGatekeeper(rset.getBoolean("globalGatekeeper"));
+	                player.setPowerBuffer(rset.getBoolean("powerBuffer"));
+	                player.setAegisBlessing(rset.getBoolean("aegisBlessing"));
+	                player.setMammonHunter(rset.getBoolean("mammonHunter"));
+	                player.setNoExp(rset.getBoolean("noExp"));
+	            }
+			rset.close();
+			statement.close();
+			if ( i == 0) {
+				_log.info("Inserting powerup:" + Config.FREE_POWERUPS + " for char " + player.getName());				
+				if ( Config.FREE_POWERUPS == true ) {
+				    player.setTrader(true);
+					player.setGlobalGatekeeper(true);
+					player.setPowerBuffer(true);
+					player.setAegisBlessing(true);
+					player.setMammonHunter(true);
+					player.setNoExp(true);
+				}
+				
+			}
+		}
+		catch (SQLException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		finally
+		{
+			 L2DatabaseFactory.close(con);
+		}
 	
+	}
+	
+
+	//L2Valhalla: Almacena los powerups
+	public void storePowerUps() {
+		
+		Connection con = null;
+		
+		try
+		{
+			con = L2DatabaseFactory.getInstance().getConnection();
+			int objectId = this.getObjectId();
+			PreparedStatement statement = con.prepareStatement(REPLACE_CHAR_POWERUP);
+			statement.setInt(1, objectId);
+			statement.setBoolean(2,getTrader());
+			statement.setBoolean(3,getGlobalGatekeeper());
+			statement.setBoolean(4,getPowerBuffer());
+			statement.setBoolean(5,getAegisBlessing());
+			statement.setBoolean(6,getMammonHunter());
+			statement.setBoolean(7,getNoExp());
+			statement.execute();
+			statement.close();
+		}
+		catch (SQLException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		finally
+		{
+			 L2DatabaseFactory.close(con);
+		}
+	}
+	//L2Valhalla: Metodos para ajustar powerups
+	public void setTrader(boolean value) {
+		powerup_trader = value;
+	}
+	public void setGlobalGatekeeper(boolean value) {
+		powerup_globalGatekeeper = value;
+	}
+	public void setPowerBuffer(boolean value) {
+		powerup_powerBuffer = value;
+	}
+	public void setAegisBlessing(boolean value) {
+		powerup_aegisBlessing = value;
+	}
+	public void setMammonHunter(boolean value) {
+		powerup_mammonHunter = value;
+	}
+	public void setNoExp(boolean value) {
+		powerup_noExp = value;
+	}
+	public boolean getTrader() {
+		return powerup_trader;
+	}
+	public boolean getGlobalGatekeeper() {
+		return powerup_globalGatekeeper;
+	}
+	public boolean getPowerBuffer() {
+		return powerup_powerBuffer;
+	}
+	public boolean getAegisBlessing() {
+		return powerup_aegisBlessing;
+	}
+	public boolean getMammonHunter() {
+		return powerup_mammonHunter;
+	}
+	public boolean getNoExp() {
+		return powerup_noExp;
+	}
+	public boolean gainsExp() {
+		return gainsExp;
+	}
+	public void resetPowerUps() {
+		setAegisBlessing(false);
+		setGlobalGatekeeper(false);
+		setPowerBuffer(false);
+		setMammonHunter(false);
+		setNoExp(false);
+		setTrader(false);
+	}
+	
+	/**
+	 * ChatBan tasks especificas L2 Valhalla 
+	 */
+	public void restoreChatBans() {
+		L2PcInstance player = null;
+		Connection con = null;
+		
+		try
+		{
+			con = L2DatabaseFactory.getInstance().getConnection();
+			int objectId = this.getObjectId();
+			PreparedStatement statement = con.prepareStatement(SELECT_CHAT_BAN);
+			statement.setInt(1, objectId);
+			ResultSet rset = statement.executeQuery(); int i = 0;
+			player = this;
+			while (rset.next())
+	            {
+					i = 1;
+	                player.startChatTask("AllChat",rset.getLong("AllChat"));
+	                player.startChatTask("Shout",rset.getLong("Shout"));
+	                player.startChatTask("Whisp",rset.getLong("Whisp"));
+	                player.startChatTask("Trade",rset.getLong("Trade"));
+	                player.startChatTask("Party",rset.getLong("Party"));
+	                player.startChatTask("Clan",rset.getLong("Clan"));
+	                player.startChatTask("Ally",rset.getLong("Ally"));
+	                player.startChatTask("Hero",rset.getLong("Hero"));
+	                charBanTime = rset.getLong("Ban");
+	            }
+			rset.close();
+			statement.close();
+			if ( i == 0) {
+				PreparedStatement insert = con.prepareStatement(INSERT_CHAT_BAN);
+				insert.setInt(1,objectId);
+				insert.execute();
+				insert.close();
+			}
+		}
+		catch (SQLException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		finally
+		{
+			 L2DatabaseFactory.close(con);
+		}
+	
+	}
+	public void storeChatBan() {
+		
+		Connection con = null;
+		
+		try
+		{
+			con = L2DatabaseFactory.getInstance().getConnection();
+			int objectId = this.getObjectId();
+			PreparedStatement statement = con.prepareStatement(REPLACE_CHAT_BAN);
+			statement.setInt(1, objectId);
+			statement.setLong(2,getChatBan("AllChat"));
+			statement.setLong(3,getChatBan("Shout"));
+			statement.setLong(4,getChatBan("Whisp"));
+			statement.setLong(5,getChatBan("Trade"));
+			statement.setLong(6,getChatBan("Party"));
+			statement.setLong(7,getChatBan("Clan"));
+			statement.setLong(8,getChatBan("Ally"));
+			statement.setLong(9,getChatBan("Hero"));
+			statement.setLong(10,charBanTime);
+			statement.execute();
+			statement.close();
+		}
+		catch (SQLException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		finally
+		{
+			 L2DatabaseFactory.close(con);
+		}
+	}
+	/*
+	 * canChat("Canal") devuelve si se puede hablar en un canal X 
+	 */
+	public boolean canChat(String channel) {
+		long delay = 0;
+		if ( channel.equals("AllChat") && _unbanChatAllTask != null) delay = _unbanChatAllTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Shout") && _unbanChatShoutTask != null) delay = _unbanChatShoutTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Whisp") && _unbanChatWhispTask != null) delay = _unbanChatWhispTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Trade") && _unbanChatTradeTask != null) delay = _unbanChatTradeTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Party") && _unbanChatPartyTask != null) delay = _unbanChatPartyTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Clan") && _unbanChatClanTask != null) delay = _unbanChatClanTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Ally") && _unbanChatAllyTask != null) delay = _unbanChatAllyTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Hero") && _unbanChatHeroTask != null) delay = _unbanChatHeroTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( delay > 0 ) return false;		
+		return true;
+	}
+	/*
+	 * getChatBan("Canal") devuelve duracion ban si aplicable 
+	 */
+	public long getChatBan(String channel) {
+		long delay = 0;
+		if ( channel.equals("AllChat") && _unbanChatAllTask != null) delay = _unbanChatAllTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Shout") && _unbanChatShoutTask != null) delay = _unbanChatShoutTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Whisp") && _unbanChatWhispTask != null) delay = _unbanChatWhispTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Trade") && _unbanChatTradeTask != null) delay = _unbanChatTradeTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Party") && _unbanChatPartyTask != null) delay = _unbanChatPartyTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Clan") && _unbanChatClanTask != null) delay = _unbanChatClanTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Ally") && _unbanChatAllyTask != null) delay = _unbanChatAllyTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( channel.equals("Hero") && _unbanChatHeroTask != null) delay = _unbanChatHeroTask.getDelay(TimeUnit.MILLISECONDS);
+		if ( delay > 0 ) return delay;
+		else return 0;
+	}
+	public void startChatTask(String task,long timer){
+		if ( timer > 0 ) {
+			if ( task.equalsIgnoreCase("AllChat") )   {
+				canAll = false;
+				_unbanChatAllTask = ThreadPoolManager.getInstance().scheduleGeneral(new stopChatTask(task), timer);
+			}
+			if ( task.equalsIgnoreCase("Shout") )   {
+				canShout = false;
+				_unbanChatShoutTask = ThreadPoolManager.getInstance().scheduleGeneral(new stopChatTask(task), timer);
+			}
+			if ( task.equalsIgnoreCase("Whisp") )   {
+				canWhisp = false;
+				_unbanChatWhispTask = ThreadPoolManager.getInstance().scheduleGeneral(new stopChatTask(task), timer);
+			}
+			if ( task.equalsIgnoreCase("Trade"))    {
+				canTrade = false;
+				_unbanChatTradeTask = ThreadPoolManager.getInstance().scheduleGeneral(new stopChatTask(task), timer);
+			}
+			if ( task.equalsIgnoreCase("Party"))    {
+				canParty = false;
+				_unbanChatPartyTask = ThreadPoolManager.getInstance().scheduleGeneral(new stopChatTask(task), timer);
+			}
+			if ( task.equalsIgnoreCase("Clan"))    {
+				canClan = false;
+				_unbanChatClanTask = ThreadPoolManager.getInstance().scheduleGeneral(new stopChatTask(task), timer);
+			}
+			if ( task.equalsIgnoreCase("Ally"))    {
+				canAlly = false;
+				_unbanChatAllyTask = ThreadPoolManager.getInstance().scheduleGeneral(new stopChatTask(task), timer);
+			}
+			if ( task.equalsIgnoreCase("Hero"))    {
+				canHero = false;
+				_unbanChatHeroTask = ThreadPoolManager.getInstance().scheduleGeneral(new stopChatTask(task), timer);
+			}
+		}
+	}
+	public void stopAllChatTask() {
+		_unbanChatAllTask.cancel(false); _unbanChatAllTask = null;
+		_unbanChatShoutTask.cancel(false); _unbanChatShoutTask = null;
+		_unbanChatWhispTask.cancel(false); _unbanChatWhispTask = null;
+		_unbanChatTradeTask.cancel(false); _unbanChatTradeTask = null;
+		_unbanChatPartyTask.cancel(false); _unbanChatPartyTask = null;
+		_unbanChatClanTask.cancel(false); _unbanChatClanTask = null;
+		_unbanChatAllyTask.cancel(false); _unbanChatAllyTask = null;
+		_unbanChatHeroTask.cancel(false); _unbanChatHeroTask = null;
+	}
+	public void stopChatTask(String task) {
+		ThreadPoolManager.getInstance().scheduleGeneral(new stopChatTask(task), 0);
+	}
+	class stopChatTask  implements Runnable 
+	{
+		String _task = null;
+		protected stopChatTask(String task) {
+			_task = task;
+		}
+		public void run() {
+			if ( _task != null) {
+				if ( _task == "AllChat" )  { _unbanChatAllTask.cancel(false); _unbanChatAllTask = null; canAll = true;}
+				if ( _task == "Shout" )  { _unbanChatShoutTask.cancel(false); _unbanChatShoutTask = null; canShout = true;}
+				if ( _task == "Whisp" )  { _unbanChatWhispTask.cancel(false); _unbanChatWhispTask = null; canWhisp = true;}
+				if ( _task == "Trade" ) { _unbanChatTradeTask.cancel(false); _unbanChatTradeTask = null; canTrade = true; }
+				if ( _task == "Party" ) { _unbanChatPartyTask.cancel(false); _unbanChatPartyTask = null; canParty = true;}
+				if ( _task == "Clan" ) { _unbanChatClanTask.cancel(false); _unbanChatClanTask = null; canClan = true;}
+				if ( _task == "Ally" ) { _unbanChatAllyTask.cancel(false); _unbanChatAllyTask = null; canAlly = true; }
+				if ( _task == "Hero" ) { _unbanChatHeroTask.cancel(false); _unbanChatHeroTask = null; canHero = true; }
+			}
+		}
+	}
+	public long getCharBanTime() {
+		return charBanTime;
+	}
+	public void setCharBanTime(long value) {
+		charBanTime = value;
+	}
+	/**
+	 * Funciones para Glory points y penalty points. Acceso inmediato a la database.
+	 * getPlayer() - Devuelve el player valhalla de este personaje
+	 * getGlory() - Devuelve los puntos de gloria actuales de este player
+	 * getPenalty() - Devuelve los puntos de castigo de este player
+	 * incGlory() - Incrementa los puntos de gloria de este player
+	 * incPenalty() - Incrementa los puntos de castigo de este player
+	 * setGlory() y setPenalty() - Hardcoded.  
+	 */
+	
+	public String getPlayer() {
+		String cuenta = null;
+		Connection con = null;
+		
+		try
+		{
+			con = L2DatabaseFactory.getInstance().getConnection();
+			String account = this.getAccountName();
+			PreparedStatement statement = con.prepareStatement(GET_PLAYER);
+			statement.setString(1, account);
+			ResultSet rset = statement.executeQuery(); int i = 0;
+			while (rset.next())
+	            {
+					i = 1;
+					cuenta = rset.getString("player");
+	            }
+			rset.close();
+			statement.close();
+			if ( i == 0) {
+				_log.log(Level.SEVERE,"Failed getting player for " + this.getName());
+			}
+		}
+		catch (SQLException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		finally
+		{
+			 L2DatabaseFactory.close(con);
+		}
+		return cuenta;
+	}
+	public int getGlory() {
+		int glory = 0;
+		Connection con = null;
+		
+		try
+		{
+			con = L2DatabaseFactory.getInstance().getConnection();
+			String account = this.getPlayer();
+			PreparedStatement statement = con.prepareStatement(GET_GLORY);
+			statement.setString(1, account);
+			ResultSet rset = statement.executeQuery(); int i = 0;
+			while (rset.next())
+	            {
+					i = 1;
+					glory = rset.getInt("glory_points");
+	            }
+			rset.close();
+			statement.close();
+			if ( i == 0) {
+
+			}
+		}
+		catch (SQLException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			_log.log(Level.SEVERE,"Failed getting glory points for player " + this.getName());
+		}
+		finally
+		{
+			 L2DatabaseFactory.close(con);
+		}
+		return glory;
+	}
+	public int getPenalty() {
+		int glory = 0;
+		Connection con = null;
+		
+		try
+		{
+			con = L2DatabaseFactory.getInstance().getConnection();
+			String account = this.getPlayer();
+			PreparedStatement statement = con.prepareStatement(GET_PENALTY);
+			statement.setString(1, account);
+			ResultSet rset = statement.executeQuery(); int i = 0;
+			while (rset.next())
+	            {
+					i = 1;
+					glory = rset.getInt("penalty_points");
+	            }
+			rset.close();
+			statement.close();
+			if ( i == 0) {
+
+			}
+		}
+		catch (SQLException e)
+		{
+			// TODO Auto-generated catch block
+			_log.log(Level.SEVERE,"Failed getting penalty points for player " + this.getName());
+			e.printStackTrace();
+		}
+		finally
+		{
+			 L2DatabaseFactory.close(con);
+		}
+		return glory;
+	}
+	public void setGlory(int glory) {
+		Connection con = null;
+		try
+        {
+			if (glory < 0 ) return;
+			String player = this.getPlayer();
+			if ( player.length() < 4 ) return;
+			con = L2DatabaseFactory.getInstance().getConnection();
+			PreparedStatement statement = con.prepareStatement(UPDATE_GLORY);
+			statement.setInt(1, glory);
+			statement.setString(2, this.getPlayer());
+			statement.execute();
+			statement.close();
+		}
+		catch (Exception e)
+		{
+			_log.log(Level.SEVERE, "Failed updating character glory points.", e);
+		}
+		finally
+		{
+			L2DatabaseFactory.close(con);
+		}
+	}
+	public void setPenalty(int penalty) {
+		Connection con = null;
+		try
+        {
+			if (penalty < 0 ) return;
+			String player = this.getPlayer();
+			if ( player.length() < 4 ) return;
+			con = L2DatabaseFactory.getInstance().getConnection();
+			PreparedStatement statement = con.prepareStatement(UPDATE_PENALTY);
+			statement.setInt(1, penalty);
+			statement.setString(2, this.getPlayer());
+			statement.execute();
+			statement.close();
+		}
+		catch (Exception e)
+		{
+			_log.log(Level.SEVERE, "Failed updating character penalty points.", e);
+		}
+		finally
+		{
+			L2DatabaseFactory.close(con);
+		}
+	}
+	public void incGlory(int glory) {
+		if ( glory < 0 ) return;
+		int currentGlory = this.getGlory();
+		if ( currentGlory > 0 ) this.setGlory(currentGlory + glory);
+		else this.setGlory(glory);
+	}
+	public void incPenalty(int penalty) {
+		if ( penalty < 0 ) return;
+		int currentPenalty = this.getPenalty();
+		if ( currentPenalty > 0 ) this.setPenalty(currentPenalty + penalty);
+		else this.setPenalty(penalty);
+	}
+
 	/**
 	 * @return
 	 */
@@ -7623,6 +8160,8 @@ public final class L2PcInstance extends L2Playable
 		if (Config.STORE_UI_SETTINGS)
 			storeUISettings();
 		SevenSigns.getInstance().saveSevenSignsData(getObjectId());
+		storePowerUps();
+		storeChatBan();
 	}
 	
 	public void store()
@@ -12267,9 +12806,9 @@ public final class L2PcInstance extends L2Playable
 		
 		if (getRace() == Race.Dwarf)
 			pslim = Config.MAX_PVTSTORESELL_SLOTS_DWARF;
-		else
-			pslim = Config.MAX_PVTSTORESELL_SLOTS_OTHER;
-		
+        else
+        	pslim = Config.MAX_PVTSTORESELL_SLOTS_OTHER;
+		if ( getTrader()) pslim = pslim + 2;
 		pslim += (int)getStat().calcStat(Stats.P_SELL_LIM, 0, null, null);
 		
 		return pslim;
@@ -15024,7 +15563,9 @@ public final class L2PcInstance extends L2Playable
 		// Store new data
 		storeRecommendations();
 	}
-	
+	public void resetBonusTaskTime() {
+		_recoBonusTask = ThreadPoolManager.getInstance().scheduleGeneral(new RecoBonusTaskEnd(), 360000);
+	}
 	public void stopRecoBonusTask()
 	{
 		if (_recoBonusTask != null)
